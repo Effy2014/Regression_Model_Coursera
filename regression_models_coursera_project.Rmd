@@ -1,0 +1,88 @@
+---
+title: "Regression Models Project"
+author: "Xinli"
+date: "May 29, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+V/S (vs) and Transmission (am) are categoercial variables. Changing them to factors.  
+```{r cars}
+data("mtcars")
+mtcars$vs <- factor(mtcars$vs)
+mtcars$am <- factor(mtcars$am)
+summary(mtcars)
+str(mtcars)
+pairs(mtcars)
+```
+
+Since we are interested in how transmissions (am) influence Miles/(US) gallon (mpg), plotting the boxplot to know the distribution of MPG for each level of transmissions. 
+
+##Exploratory Data Analyses
+```{r}
+boxplot(mpg~am, data=mtcars, xlab="Transmission", ylab="Miles/(US) gallon")
+```
+
+The plot shows that manual transmission leads to more MPG. Using T test to know if there is significant difference between automatic and manual transmissions.
+```{r}
+t.test(mpg~am, data=mtcars)
+```
+
+The p-value is 0.01374, which is less than 0.05. So under 0.05 significant level, null hypothesis is reject. So manual transmission is better for MPG
+
+##Fitting Models and Model Selection
+Next, to know the MPG differenct between automatic and manual transmissions, fitting a model only includes variable am. 
+
+```{r}
+fit <- lm(mpg~am, data=mtcars)
+par(mfrow=c(2,2))
+plot(fit)
+```
+
+The residual plots show linear model contains only one variable cannot explain MPG well, so using stepwise algorithm doing model selection. AIC is used as criterion.
+
+```{r}
+stepmodel <- step(lm(mpg~., data = mtcars),direction = "both", trace = 0)
+summary(stepmodel)
+```
+The updated model contains three variables, Weight(wt), 1/4 mile time(qsec) and Transmission(am). And it explains 84.97% of the variance.
+
+```{r}
+anova(fit,stepmodel)
+```
+
+
+##Residual Plot and Diagnostics
+```{r}
+par(mfrow=c(2,2))
+plot(stepmodel)
+```
+
+- The points in the Residuals vs. Fitted plot are randomly scattered on the plot that verifies the independence condition.
+
+- The Normal Q-Q plot consists of the points which mostly fall on the line indicating that the residuals are normally distributed.
+
+- The Scale-Location plot consists of points scattered in a constant band pattern, indicating constant variance.
+
+- There are some distinct points of interest (outliers or leverage points) in the left of plot, showing there are low-leverage but high-standardized residual points.
+
+```{r}
+library(car)
+vif(stepmodel)
+leverage <- hatvalues(stepmodel)
+tail(sort(leverage),3)
+influential <- dfbetas(stepmodel)
+tail(sort(influential),3)
+```
+- VIF tells the multicollinearity of the model is not high. 
+
+- Leverage is not that large. Using cut off value of dfbetas is 2/sqrt(n), the result suggests there are outliers.
+
+##Summary
+
+1. Manual transmission is better for MPG than automatic one.
+
+2. Adjusting for Weight(wt) and 1/4 mile time(qsec), cars with manual transmission get 2.9 more mils per gallon compared to cars with automatic transmission.
